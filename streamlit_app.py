@@ -1,7 +1,10 @@
 import streamlit as st
 from langchain.llms import OpenAI
 from langchain_community.document_loaders import YoutubeLoader
+from langchain.chains import MapReduceDocumentsChain, ReduceDocumentsChain
+from langchain.text_splitter import CharacterTextSplitter
 from app_blurb import blurb
+from summarize_transcript import splitText
 
 st.title('🎙️⏳ Podcast Summarizer')
 st.markdown(blurb)
@@ -17,9 +20,11 @@ def load_youtube_transcript(url: str):
     url, add_video_info=False
     )
     transcript = loader.load()
-    print(type(transcript[0].page_content))
-    print(len(transcript[0].page_content))
-    print(transcript[0].page_content[:5000])
+    # print(type(transcript[0].page_content))
+    # print(len(transcript[0].page_content))
+    # print(transcript[0].page_content[:5000])
+    transcript_text = transcript[0].page_content
+    splitText(transcript=transcript_text)
     # print(len(transcript[0]))
 
 user_input = st.text_input('Enter a youtube podcast url to summarize')
