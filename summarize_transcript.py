@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from langchain.llms import OpenAI
 from langchain.chains.llm import LLMChain
 from langchain.prompts import PromptTemplate
-from langchain.chains import MapReduceDocumentsChain, ReduceDocumentsChain
+from langchain.chains import MapReduceDocumentsChain, ReduceDocumentsChain, StuffDocumentsChain
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 
@@ -24,38 +24,52 @@ def splitText(transcript: str) -> list:
     return texts
 
 def connectToApi():
-    llm = OpenAI(model_name="gpt-3.5-turbo-instruct", \
+    return OpenAI(model_name="gpt-3.5-turbo-instruct", \
                     temperature=0.7, openai_api_key=os.getenv("API_KEY"))
 
-def mapChain():
+def createSummary(llm, transcript_chunks):
     # Map
-    map_template = """The following is a set of documents
-    {docs}
-    Based on this list of docs, please identify the main themes 
-    Helpful Answer:"""
+    map_template = """The following text is from the transcript of a podcast
+    {text}
+    Based on this text, please summarize and identify the main themes clearly and concisely in less than 80 words. 
+    Summary:"""
     map_prompt = PromptTemplate.from_template(map_template)
     map_chain = LLMChain(llm=llm, prompt=map_prompt)
 
-def reduceChain():
     # Reduce
     reduce_template = """The following is set of summaries:
-    {docs}
+    {text}
     Take these and distill it into a final, consolidated summary of the main themes. 
     Helpful Answer:"""
     reduce_prompt = PromptTemplate.from_template(reduce_template)
 
     # Run chain
     reduce_chain = LLMChain(llm=llm, prompt=reduce_prompt)
+    # Takes a list of documents, combines them into a single string, and passes this to an LLMChain
+    combine_documents_chain = StuffDocumentsChain(
+        llm_chain=reduce_chain, document_variable_name="docs"
+    )
 
-def mapReduceChain():
+    # Combines and iteratively reduces the mapped documents
+    reduce_documents_chain = ReduceDocumentsChain(
+        # This is final chain that is called.
+        combine_documents_chain=combine_documents_chain,
+        # If documents exceed context for `StuffDocumentsChain`
+        collapse_documents_chain=combine_documents_chain,
+        # The maximum number of tokens to group documents into.
+        token_max=4000,
+    )
     # Combining documents by mapping a chain over them, then combining results
     map_reduce_chain = MapReduceDocumentsChain(
         # Map chain
         llm_chain=map_chain,
         # Reduce chain
-        reduce_documents_chain=reduce_chain,
+        reduce_documents_chain=reduce_documents_chain,
         # The variable name in the llm_chain to put the documents in
-        document_variable_name="docs",
+        document_variable_name="text",
         # Return the results of the map steps in the output
         return_intermediate_steps=False,
     )
+
+    final_summary = map_reduce_chain.run(transcript_chunks)
+    return final_summary
