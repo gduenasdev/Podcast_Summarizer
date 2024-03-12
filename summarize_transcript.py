@@ -39,7 +39,7 @@ def createSummary(llm, transcript_chunks):
     # Map
     map_template = """The following text is from the transcript of a podcast
     {text}
-    Based on this text, please summarize and identify the main themes clearly and concisely in less than 80 words. 
+    Based on this text, please summarize and highlight topics and examples in the text clearly and concisely in less than 100 words. 
     Summary:"""
     map_prompt = PromptTemplate.from_template(map_template)
     map_chain = LLMChain(llm=llm, prompt=map_prompt)
@@ -47,8 +47,8 @@ def createSummary(llm, transcript_chunks):
     # Reduce
     reduce_template = """The following is set of summaries:
     {text}
-    Take these and distill it into a final, consolidated summary of the main themes. 
-    Helpful Answer:"""
+    Take these and distill it into a final, consolidated summary of the main topics discussed in the podcast. 
+    Podcast Summary:"""
     reduce_prompt = PromptTemplate.from_template(reduce_template)
 
     # Run chain

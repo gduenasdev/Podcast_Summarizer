@@ -5,6 +5,7 @@ from langchain.chains import MapReduceDocumentsChain, ReduceDocumentsChain
 from langchain.text_splitter import CharacterTextSplitter
 from app_blurb import blurb
 from summarize_transcript import splitText, connectToApi, createSummary, convertToLangchainDocuments
+from cluster_text import clusterContext
 
 st.title('🎙️⏳ Podcast Summarizer')
 st.markdown(blurb)
@@ -23,7 +24,8 @@ def load_youtube_transcript(url: str):
     title = transcript[0].metadata['title']
     transcript_text = transcript[0].page_content
     split_transcript = splitText(transcript=transcript_text)
-    transcript_chunks = convertToLangchainDocuments(split_transcript)
+    n_clustered_chunks = clusterContext(split_transcript, 25)
+    transcript_chunks = convertToLangchainDocuments(n_clustered_chunks)
     return transcript_chunks, title
 
 user_input = st.text_input('Enter a youtube podcast url to summarize')
