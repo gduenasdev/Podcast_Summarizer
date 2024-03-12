@@ -6,7 +6,7 @@ from langchain.chains.llm import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain.chains import MapReduceDocumentsChain, ReduceDocumentsChain, StuffDocumentsChain
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-
+from langchain.docstore.document import Document
 
 # Load variables from .env into the environment
 load_dotenv()
@@ -22,6 +22,14 @@ def splitText(transcript: str) -> list:
     texts = text_splitter.split_text(transcript)
     
     return texts
+
+def convertToLangchainDocuments(documents):
+    langchain_documents = []
+    metadata = {"source": "youtube"}
+    for context in documents:
+        document = Document(page_content=context, metadata=metadata)
+        langchain_documents.append(document)
+    return langchain_documents
 
 def connectToApi():
     return OpenAI(model_name="gpt-3.5-turbo-instruct", \
@@ -47,7 +55,7 @@ def createSummary(llm, transcript_chunks):
     reduce_chain = LLMChain(llm=llm, prompt=reduce_prompt)
     # Takes a list of documents, combines them into a single string, and passes this to an LLMChain
     combine_documents_chain = StuffDocumentsChain(
-        llm_chain=reduce_chain, document_variable_name="docs"
+        llm_chain=reduce_chain, document_variable_name="text"
     )
 
     # Combines and iteratively reduces the mapped documents
